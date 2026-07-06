@@ -1,37 +1,43 @@
 {
-  "generated": "2026-07-06T02:00:27Z",
+  "generated": "2026-07-06T02:07:56Z",
   "auto": {
     "margin_mom": {
-      "ok": false,
-      "error": "403 Client Error: Forbidden for url: https://www.finra.org/investors/learn-to-invest/advanced-investing/margin-statistic"
+      "value": 8.5,
+      "asof": "May-26",
+      "ok": true,
+      "fetched": "2026-07-06 02:07 UTC"
     },
     "top10": {
       "value": 36.6,
       "asof": "2026-07-06",
       "ok": true,
-      "fetched": "2026-07-06 02:00 UTC"
+      "fetched": "2026-07-06 02:07 UTC"
     },
     "buffett": {
       "value": 218.1,
       "asof": "2026-01-01",
       "ok": true,
-      "fetched": "2026-07-06 02:00 UTC"
+      "fetched": "2026-07-06 02:07 UTC"
     },
     "m2_ndx_gap": {
-      "ok": false,
-      "error": "Stooq %5Endx 資料筆數不足"
+      "value": -24.0,
+      "m2_yoy": 5.6,
+      "ndx_yoy": 29.5,
+      "asof": "2026-05-01",
+      "ok": true,
+      "fetched": "2026-07-06 02:07 UTC"
     },
     "h41": {
       "value": 2.967,
       "asof": "2026-07-01",
       "ok": true,
-      "fetched": "2026-07-06 02:00 UTC"
+      "fetched": "2026-07-06 02:07 UTC"
     },
     "skew_index": {
       "value": 150.0,
       "asof": "07/02/2026",
       "ok": true,
-      "fetched": "2026-07-06 02:00 UTC"
+      "fetched": "2026-07-06 02:07 UTC"
     }
   }
 }
