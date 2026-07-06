@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-06T01:52:38Z",
+  "generated": "2026-07-06T02:00:27Z",
   "auto": {
     "margin_mom": {
       "ok": false,
@@ -9,27 +9,29 @@
       "value": 36.6,
       "asof": "2026-07-06",
       "ok": true,
-      "fetched": "2026-07-06 01:52 UTC"
+      "fetched": "2026-07-06 02:00 UTC"
     },
     "buffett": {
       "value": 218.1,
       "asof": "2026-01-01",
       "ok": true,
-      "fetched": "2026-07-06 01:52 UTC"
+      "fetched": "2026-07-06 02:00 UTC"
     },
     "m2_ndx_gap": {
       "ok": false,
-      "error": "429 Client Error: Too Many Requests for url: https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=2y&interval="
+      "error": "Stooq %5Endx 資料筆數不足"
     },
     "h41": {
-      "value": 2966.897,
+      "value": 2.967,
       "asof": "2026-07-01",
       "ok": true,
-      "fetched": "2026-07-06 01:52 UTC"
+      "fetched": "2026-07-06 02:00 UTC"
     },
     "skew_index": {
-      "ok": false,
-      "error": "429 Client Error: Too Many Requests for url: https://query1.finance.yahoo.com/v8/finance/chart/%5ESKEW?range=1mo&interva"
+      "value": 150.0,
+      "asof": "07/02/2026",
+      "ok": true,
+      "fetched": "2026-07-06 02:00 UTC"
     }
   }
 }
