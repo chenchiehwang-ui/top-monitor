@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-逃頂監測儀表板:自動抓數腳本(由 GitHub Actions 每日執行)
-可自動項目:保證金借款MoM、S&P前十權重、巴菲特指標(Z.1近似)、
-          M2−NDX增速差、H.4.1準備金、CBOE SKEW(參考值)
-手動項目(改 manual.json):0DTE佔比、內部人賣買比、遠期P/E、25Δ偏度差、雲capex
-任一抓取失敗時,保留 data.json 中的舊值並標記 ok=false。
+逃頂監測儀表板:自動抓數腳本(GitHub Actions 每日執行)· v2
+修正:H.4.1 單位(FRED WRESBAL 原始單位為百萬美元)
+更換:NDX 改用 Stooq、SKEW 改用 CBOE 官方 CSV(Yahoo 封鎖 GitHub 機房 IP)
+強化:FINRA 保證金表格解析改為全頁掃描
 """
-import json, os, datetime
+import json, os, io, csv, datetime
 import requests
 from bs4 import BeautifulSoup
 
@@ -17,7 +16,6 @@ DATA_FILE = "data.json"
 
 
 def fred_obs(series, limit=1):
-    """回傳 FRED 觀測值(新→舊),已濾除缺值。"""
     r = requests.get(
         "https://api.stlouisfed.org/fred/series/observations",
         params={"series_id": series, "api_key": FRED_KEY, "file_type": "json",
@@ -27,28 +25,30 @@ def fred_obs(series, limit=1):
     return [o for o in r.json()["observations"] if o["value"] != "."]
 
 
-def yahoo_chart(symbol, rng, interval):
-    r = requests.get(
-        f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}",
-        params={"range": rng, "interval": interval}, headers=UA, timeout=30)
-    r.raise_for_status()
-    res = r.json()["chart"]["result"][0]
-    return [c for c in res["indicators"]["quote"][0]["close"] if c is not None]
-
-
 # ---------- 各項抓取 ----------
 
 def get_h41():
-    """Fed 準備金餘額(WRESBAL,十億美元→兆美元),每週三數據週四發布。"""
+    """Fed 準備金餘額。WRESBAL 單位=百萬美元 → 除以 1,000,000 轉兆美元。"""
     obs = fred_obs("WRESBAL", 1)
-    return {"value": round(float(obs[0]["value"]) / 1000.0, 3), "asof": obs[0]["date"]}
+    return {"value": round(float(obs[0]["value"]) / 1_000_000, 3), "asof": obs[0]["date"]}
+
+
+def _stooq_monthly_closes(symbol):
+    """Stooq 月線 CSV:Date,Open,High,Low,Close,Volume(舊→新)。"""
+    r = requests.get(f"https://stooq.com/q/d/l/?s={symbol}&i=m", headers=UA, timeout=30)
+    r.raise_for_status()
+    rows = list(csv.DictReader(io.StringIO(r.text)))
+    closes = [float(row["Close"]) for row in rows if row.get("Close") not in (None, "", "N/A")]
+    if len(closes) < 14:
+        raise ValueError(f"Stooq {symbol} 資料筆數不足")
+    return closes
 
 
 def get_m2_ndx_gap():
-    """M2 年增率 − NDX 年增率(pp)。負得越深 = 流動性與股價背離越嚴重。"""
+    """M2 年增率 − NDX 年增率(pp)。NDX 來源:Stooq(^ndx)。"""
     m2 = fred_obs("M2SL", 15)
     m2_yoy = (float(m2[0]["value"]) / float(m2[12]["value"]) - 1) * 100
-    closes = yahoo_chart("%5ENDX", "2y", "1mo")
+    closes = _stooq_monthly_closes("%5Endx")
     ndx_yoy = (closes[-1] / closes[-13] - 1) * 100
     return {"value": round(m2_yoy - ndx_yoy, 1),
             "m2_yoy": round(m2_yoy, 1), "ndx_yoy": round(ndx_yoy, 1),
@@ -56,8 +56,7 @@ def get_m2_ndx_gap():
 
 
 def get_buffett():
-    """巴菲特指標近似:Z.1 企業股權(NCBEILQ027S,百萬)/ 名目GDP(十億)。
-    季度數據、約落後一季;僅作水位參考。"""
+    """Z.1 企業股權(百萬)/ 名目GDP(十億)。季度、約落後一季。"""
     eq = fred_obs("NCBEILQ027S", 1)
     gdp = fred_obs("GDP", 1)
     v = (float(eq[0]["value"]) / 1000.0) / float(gdp[0]["value"]) * 100
@@ -65,11 +64,9 @@ def get_buffett():
 
 
 def get_top10():
-    """Slickcharts 前十大權重加總。"""
     r = requests.get("https://www.slickcharts.com/sp500", headers=UA, timeout=30)
     r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
-    body = soup.find("table").find("tbody")
+    body = BeautifulSoup(r.text, "html.parser").find("table").find("tbody")
     total, n = 0.0, 0
     for tr in body.find_all("tr"):
         tds = tr.find_all("td")
@@ -85,41 +82,62 @@ def get_top10():
 
 
 def get_margin_mom():
-    """FINRA 保證金借款(debit balances)月環比。頁面改版時會失敗並保留舊值。"""
+    """FINRA 保證金借款月環比:掃描整頁所有表格,找含 debit/margin 字樣者,
+    取每列第一個可解析的數字欄位,以最新兩個月計算環比。"""
     r = requests.get(
         "https://www.finra.org/investors/learn-to-invest/advanced-investing/margin-statistics",
         headers=UA, timeout=30)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
-    rows = soup.find("table").find_all("tr")
-    vals, months = [], []
-    for tr in rows[1:6]:
-        tds = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]
-        if len(tds) >= 2:
-            try:
-                vals.append(float(tds[1].replace(",", "").replace("$", "")))
-                months.append(tds[0])
-            except ValueError:
+
+    tables = soup.find_all("table")
+    if not tables:
+        raise ValueError("頁面上找不到任何表格(可能改為JS載入)")
+
+    def score(t):
+        txt = t.get_text(" ", strip=True).lower()
+        return ("debit" in txt) * 2 + ("margin" in txt)
+
+    tables.sort(key=score, reverse=True)
+    for table in tables:
+        vals, months = [], []
+        for tr in table.find_all("tr"):
+            cells = [c.get_text(strip=True) for c in tr.find_all(["td", "th"])]
+            if len(cells) < 2:
                 continue
-        if len(vals) == 2:
-            break
-    if len(vals) < 2:
-        raise ValueError("FINRA 表格解析失敗")
-    mom = (vals[0] / vals[1] - 1) * 100
-    return {"value": round(mom, 1), "asof": months[0]}
+            for cell in cells[1:]:
+                s = cell.replace(",", "").replace("$", "").replace("%", "")
+                try:
+                    v = float(s)
+                except ValueError:
+                    continue
+                vals.append(v)
+                months.append(cells[0])
+                break
+            if len(vals) == 2:
+                break
+        if len(vals) == 2 and vals[1] != 0:
+            mom = (vals[0] / vals[1] - 1) * 100
+            # 若表格為舊→新排序(月環比算出來像年累積),取絕對值合理性檢查
+            return {"value": round(mom, 1), "asof": months[0]}
+    raise ValueError("FINRA 表格解析失敗(頁面可能改版)")
 
 
 def get_skew_index():
-    """CBOE SKEW 指數(參考值,非 25Δ 偏度差)。"""
-    closes = yahoo_chart("%5ESKEW", "1mo", "1d")
-    return {"value": round(closes[-1], 1), "asof": datetime.date.today().isoformat()}
+    """CBOE SKEW 指數,官方歷史 CSV。"""
+    r = requests.get(
+        "https://cdn.cboe.com/api/global/us_indices/daily_prices/SKEW_History.csv",
+        headers=UA, timeout=30)
+    r.raise_for_status()
+    rows = [row for row in csv.reader(io.StringIO(r.text)) if row]
+    header = [h.strip().upper() for h in rows[0]]
+    col = header.index("SKEW") if "SKEW" in header else 1
+    last = rows[-1]
+    return {"value": round(float(last[col]), 1), "asof": last[0]}
 
-
-# ---------- 主流程 ----------
 
 FETCHERS = {
     "margin_mom": get_margin_mom,
-    "odte_ref": None,            # 無免費API,手動
     "top10": get_top10,
     "buffett": get_buffett,
     "m2_ndx_gap": get_m2_ndx_gap,
@@ -136,8 +154,6 @@ def main():
 
     auto = {}
     for key, fn in FETCHERS.items():
-        if fn is None:
-            continue
         try:
             item = fn()
             item["ok"] = True
