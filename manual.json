@@ -1,0 +1,9 @@
+{
+  "_說明": "自動抓不到的項目在這裡改。直接在 GitHub 網頁點鉛筆編輯、commit 即可,儀表板會自動讀取。",
+  "odte": { "value": 62.4, "asof": "2026-06", "_來源": "CBOE Insights / 券商研報,約每月查一次" },
+  "insider": { "value": 4.17, "asof": "2026-06", "_來源": "openinsider.com 或研報引用的賣買比" },
+  "fpe": { "value": 30, "asof": "2026-06", "_來源": "FactSet Earnings Insight(每週五PDF)" },
+  "skew25d": { "value": -3.0, "asof": "2026-06", "_來源": "Market Chameleon 25Δ risk reversal;正值=倒掛" },
+  "capex_now": { "value": 8, "asof": "2026Q2", "_來源": "四大雲廠商財報CapEx環比增速%" },
+  "capex_prev": { "value": 12, "asof": "2026Q1", "_來源": "上一季環比增速%" }
+}

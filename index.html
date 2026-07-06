@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>逃頂監測儀表板 · 自動更新版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ECEEF2; --panel:#FFFFFF; --ink:#1B2430; --muted:#6B7480; --line:#DDE1E8;
+    --red:#C94040; --red-bg:#FBEDED; --amber:#D98E1F; --amber-bg:#FBF3E3;
+    --green:#2E8F63; --green-bg:#E9F4EE; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',system-ui,sans-serif;padding:28px 16px 60px;line-height:1.5}
+  .wrap{max-width:980px;margin:0 auto}
+  header h1{font-size:22px;font-weight:900;letter-spacing:.04em}
+  header .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  header .sub .gen{font-family:var(--mono)}
+
+  .verdict{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .verdict .state{font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .verdict .dot{width:11px;height:11px;border-radius:50%}
+  .verdict .count{font-family:var(--mono);font-size:44px;font-weight:600;line-height:1.1;margin-top:6px}
+  .verdict .count small{font-size:18px;color:var(--muted)}
+  .fuse{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px}
+  .fuse .seg{height:14px;border-radius:4px;background:#E4E7EC;position:relative}
+  .fuse .seg.on{background:var(--red)}
+  .fuse .seg.near{background:var(--amber)}
+  .fuse .seg span{position:absolute;top:18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden}
+  .verdict .action{margin-top:38px;font-size:13.5px;border-top:1px dashed var(--line);padding-top:12px}
+
+  h2.sec{font-size:14px;font-weight:700;letter-spacing:.12em;color:var(--muted);margin:30px 0 10px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .row{display:grid;grid-template-columns:1.5fr .9fr .9fr .8fr;gap:10px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .name{font-weight:700;font-size:14.5px}
+  .row .name .mode{font-size:10px;font-weight:500;font-family:var(--mono);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;color:var(--muted);vertical-align:middle}
+  .row .meta{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .row .meta a{color:var(--muted)}
+  .valwrap{display:flex;align-items:baseline;gap:4px}
+  .valtext{font-family:var(--mono);font-size:20px;font-weight:600}
+  input.val{font-family:var(--mono);font-size:20px;font-weight:600;width:100px;border:none;border-bottom:2px solid var(--line);background:transparent;color:var(--ink);text-align:right;outline:none}
+  input.val:focus{border-color:var(--ink)}
+  .unit{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .thr{font-size:12px;color:var(--muted);font-family:var(--mono)}
+  .badge{font-size:13px;font-weight:700;border-radius:8px;padding:6px 14px;min-width:84px;text-align:center;display:inline-block}
+  .b-red{background:var(--red);color:#fff}
+  .b-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+  .b-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .stamp{font-size:10.5px;color:var(--muted);margin-top:4px}
+  .stale{color:var(--red);font-weight:700}
+  .rowend{justify-self:end;text-align:right}
+
+  .signals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .sig{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+  .sig .tag{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.08em}
+  .sig .t{font-weight:700;font-size:14.5px}
+  .sig .desc{font-size:12px;color:var(--muted)}
+  .sig .big{font-family:var(--mono);font-size:26px;font-weight:600}
+  .sig .big .unit{font-size:14px}
+  .sig input{font-family:var(--mono);font-size:18px;font-weight:600;width:90px;border:none;border-bottom:2px solid var(--line);background:transparent;text-align:right;outline:none;color:var(--ink)}
+  .sig label{font-size:12px;color:var(--muted)}
+  .sig .inline{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+  .sig .src{font-size:11px;color:var(--muted)}
+  .sig .src a{color:var(--muted)}
+  .notice{margin-top:14px;font-size:12px;color:var(--muted);background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:10px 14px;display:none}
+  .foot{margin-top:18px;font-size:11.5px;color:var(--muted)}
+
+  @media(max-width:720px){
+    .row{grid-template-columns:1fr 1fr;row-gap:8px}
+    .row .name{grid-column:1/-1}
+    .rowend{justify-self:start;text-align:left}
+    .signals{grid-template-columns:1fr}
+    .fuse .seg span{display:none}
+    .verdict .action{margin-top:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>逃頂監測儀表板</h1>
+    <div class="sub">自動更新版 · 數據產生於 <span class="gen" id="gen">載入中…</span> · 標示「手動」的項目請編輯 repo 的 manual.json</div>
+  </header>
+
+  <div class="notice" id="notice"></div>
+  <div class="verdict" id="verdict"></div>
+
+  <h2 class="sec">二階導儀表盤 · 7 項觸發指標</h2>
+  <div class="card" id="rows"></div>
+
+  <h2 class="sec">核心三大定量信號</h2>
+  <div class="signals" id="signals"></div>
+
+  <div class="foot">
+    判定邏輯:單項達閾值 → 已觸發;達閾值 85–100% 區間 → 接近;5 項以上同時觸發 → 4–8 週觀察期(回測基準僅 1999–2000 一個樣本,視為脆弱度儀器而非擇時指令)。<br>
+    估值類(巴菲特、前十權重、遠期P/E)可長期停留觸發區;真正時間敏感的是流量類轉向:保證金借款轉負、內部人比飆升、H.4.1 跌破線、偏度倒掛。<br>
+    自動抓取失敗的項目會顯示紅色「來源失效」並沿用舊值——通常代表來源網頁改版,提醒我修一下腳本即可。
+  </div>
+</div>
+
+<script>
+// ---------- 設定:指標定義(閾值可在此修改) ----------
+const IND = [
+  {key:'margin_mom', name:'保證金借款月環比', unit:'%',  dir:'lte', trig:0,   near:1,   auto:true,
+   src:'FINRA Margin Statistics', url:'https://www.finra.org/investors/learn-to-invest/advanced-investing/margin-statistics'},
+  {key:'odte',       name:'0DTE 佔股指期權比重', unit:'%', dir:'gte', trig:55, near:50,  auto:false,
+   src:'CBOE Insights(手動月更)', url:'https://www.cboe.com/insights/'},
+  {key:'top10',      name:'S&P 500 前 10 名權重', unit:'%', dir:'gte', trig:27, near:25, auto:true,
+   src:'Slickcharts', url:'https://www.slickcharts.com/sp500'},
+  {key:'buffett',    name:'巴菲特指標(Z.1 季度近似)', unit:'%', dir:'gte', trig:150, near:140, auto:true,
+   src:'FRED NCBEILQ027S / GDP', url:'https://fred.stlouisfed.org/series/NCBEILQ027S'},
+  {key:'m2_ndx_gap', name:'M2 vs NDX 增速差', unit:'pp', dir:'lte', trig:-15, near:-10, auto:true,
+   src:'FRED M2SL + Yahoo NDX', url:'https://fred.stlouisfed.org/series/M2SL'},
+  {key:'insider',    name:'內部人賣買比', unit:'×', dir:'gte', trig:5, near:4, auto:false,
+   src:'OpenInsider(手動週更)', url:'http://openinsider.com'},
+  {key:'fpe',        name:'遠期 P/E(S&P 500)', unit:'×', dir:'gte', trig:32, near:29, auto:false,
+   src:'FactSet Earnings Insight(手動週更)', url:'https://insight.factset.com/topic/earnings'}
+];
+
+// 預設值:data.json / manual.json 載入失敗時的後備(預覽模式)
+const FALLBACK = {
+  auto: {
+    margin_mom:{value:-4.5, asof:'—', ok:true}, top10:{value:38, asof:'—', ok:true},
+    buffett:{value:225.9, asof:'—', ok:true}, m2_ndx_gap:{value:-24.8, asof:'—', ok:true},
+    h41:{value:2.95, asof:'—', ok:true}, skew_index:{value:150, asof:'—', ok:true}
+  },
+  manual: {
+    odte:{value:62.4, asof:'—'}, insider:{value:4.17, asof:'—'}, fpe:{value:30, asof:'—'},
+    skew25d:{value:-3.0, asof:'—'}, capex_now:{value:8, asof:'—'}, capex_prev:{value:12, asof:'—'}
+  }
+};
+
+const H41_WARN = 2.8, H41_STOP = 2.5;
+let AUTO = FALLBACK.auto, MANUAL = FALLBACK.manual, GEN = null;
+
+// 手動項目的瀏覽器暫存覆寫(跨裝置同步請改 manual.json)
+function loadOverrides(){
+  try{ return JSON.parse(localStorage.getItem('topmon_ovr')||'{}'); }catch(e){ return {}; }
+}
+function saveOverride(key,val){
+  try{
+    const o = loadOverrides(); o[key]={value:val, asof:new Date().toISOString().slice(0,10)};
+    localStorage.setItem('topmon_ovr', JSON.stringify(o));
+  }catch(e){}
+}
+function manualVal(key){
+  const o = loadOverrides();
+  if(o[key] && typeof o[key].value === 'number') return o[key];
+  return MANUAL[key] || {value:NaN, asof:'—'};
+}
+
+function statusOf(v, ind){
+  if(v===null||v===undefined||isNaN(v)) return 'na';
+  if(ind.dir==='gte'){ if(v>=ind.trig) return 'trig'; if(v>=ind.near) return 'near'; return 'ok'; }
+  else { if(v<=ind.trig) return 'trig'; if(v<=ind.near) return 'near'; return 'ok'; }
+}
+
+function render(){
+  document.getElementById('gen').textContent = GEN
+    ? new Date(GEN).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false})+'(台北)'
+    : '尚未取得 data.json(顯示預設值)';
+
+  const rows = document.getElementById('rows');
+  rows.innerHTML='';
+  let trig=0, near=0;
+  const segs=[];
+
+  IND.forEach(ind=>{
+    let val, asof, ok=true;
+    if(ind.auto){
+      const d = AUTO[ind.key]||{};
+      val=d.value; asof=d.asof||'—'; ok=d.ok!==false;
+    } else {
+      const m = manualVal(ind.key);
+      val=m.value; asof=m.asof||'—';
+    }
+    const st = statusOf(val, ind);
+    if(st==='trig') trig++; if(st==='near') near++;
+    segs.push(st);
+
+    const cmp = ind.dir==='gte'?'≥':'≤';
+    const row = document.createElement('div'); row.className='row';
+    row.innerHTML = `
+      <div>
+        <div class="name">${ind.name}<span class="mode">${ind.auto?'自動':'手動'}</span></div>
+        <div class="meta"><a href="${ind.url}" target="_blank">${ind.src}</a></div>
+      </div>
+      <div class="valwrap">${ind.auto
+        ? `<span class="valtext">${val===undefined?'—':val}</span>`
+        : `<input class="val" type="number" step="any" value="${isNaN(val)?'':val}" data-k="${ind.key}">`}
+        <span class="unit">${ind.unit}</span></div>
+      <div class="thr">觸發 ${cmp}${ind.trig}${ind.unit}<br>接近 ${cmp}${ind.near}${ind.unit}</div>
+      <div class="rowend">
+        <span class="badge ${st==='trig'?'b-red':st==='near'?'b-amber':'b-green'}">${st==='trig'?'已觸發':st==='near'?'接近':st==='na'?'無數據':'未觸發'}</span>
+        <div class="stamp">${ok?('數據至 '+asof):'<span class="stale">來源失效,沿用 '+asof+'</span>'}</div>
+      </div>`;
+    rows.appendChild(row);
+  });
+
+  rows.querySelectorAll('input.val').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const v=parseFloat(e.target.value);
+      if(!isNaN(v)) saveOverride(e.target.dataset.k, v);
+      render();
+    });
+  });
+
+  // ---------- 三大信號 ----------
+  const h41 = AUTO.h41||{}, skewIdx = AUTO.skew_index||{};
+  const sk = manualVal('skew25d'), cxN = manualVal('capex_now'), cxP = manualVal('capex_prev');
+  const sigs = document.getElementById('signals');
+
+  let h41cls, h41txt, h41stop=false;
+  if(h41.value < H41_STOP){ h41cls='b-red'; h41txt='強平區 · 無條件清倉'; h41stop=true; }
+  else if(h41.value < H41_WARN){ h41cls='b-amber'; h41txt='融漲結束 · 開始減碼'; }
+  else { h41cls='b-green'; h41txt='安全線之上'; }
+
+  let skcls, sktxt;
+  if(sk.value > 0){ skcls='b-red'; sktxt='倒掛 · 二波點火倒數'; }
+  else if(sk.value > -1){ skcls='b-amber'; sktxt='偏度趨平 · 留意'; }
+  else { skcls='b-green'; sktxt='正常偏度'; }
+
+  const decel = cxP.value - cxN.value;
+  let cxcls, cxtxt;
+  if(cxN.value <= 0){ cxcls='b-red'; cxtxt='需求拐點 · 環比轉負'; }
+  else if(decel > 0){ cxcls='b-amber'; cxtxt='降速中(−'+decel.toFixed(1)+'pp)'; }
+  else { cxcls='b-green'; cxtxt='增速維持'; }
+
+  sigs.innerHTML = `
+    <div class="sig">
+      <div class="tag">SIGNAL 01 / 流動性底座 <span class="mode" style="font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 5px">自動</span></div>
+      <div class="t">Fed H.4.1 準備金餘額</div>
+      <div class="big">${h41.value??'—'}<span class="unit"> 兆美元</span></div>
+      <div class="desc">警戒線 ${H41_WARN}T / 強平線 ${H41_STOP}T · 數據至 ${h41.asof||'—'}${h41.ok===false?' <span class="stale">(來源失效)</span>':''}</div>
+      <span class="badge ${h41cls}" style="align-self:flex-start">${h41txt}</span>
+      <div class="src"><a href="https://fred.stlouisfed.org/series/WRESBAL" target="_blank">FRED WRESBAL</a> · 每週四更新</div>
+    </div>
+    <div class="sig">
+      <div class="tag">SIGNAL 02 / 期權偏度 <span class="mode" style="font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 5px">手動</span></div>
+      <div class="t">Call − Put 隱含波動率差(25Δ)</div>
+      <div class="inline"><input type="number" step="0.1" value="${sk.value}" data-k="skew25d" class="sigin"><span class="unit">pp</span></div>
+      <div class="desc">翻正 = 倒掛。參考:CBOE SKEW 指數目前 <b>${skewIdx.value??'—'}</b>(自動,>150 表示尾部避險需求高)</div>
+      <span class="badge ${skcls}" style="align-self:flex-start">${sktxt}</span>
+      <div class="src"><a href="https://marketchameleon.com" target="_blank">Market Chameleon 25Δ risk reversal</a> · 每日</div>
+    </div>
+    <div class="sig">
+      <div class="tag">SIGNAL 03 / 下游二階導 <span class="mode" style="font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 5px">手動</span></div>
+      <div class="t">雲廠商資本開支環比增速</div>
+      <div class="inline"><label>本季</label><input type="number" step="0.1" value="${cxN.value}" data-k="capex_now" class="sigin"><span class="unit">%</span>
+      <label>上季</label><input type="number" step="0.1" value="${cxP.value}" data-k="capex_prev" class="sigin"><span class="unit">%</span></div>
+      <div class="desc">增速 ≤ 0 = 需求拐點;利潤新高 + 增速見頂 = 清倉相關持股。財報季更新。</div>
+      <span class="badge ${cxcls}" style="align-self:flex-start">${cxtxt}</span>
+      <div class="src">MSFT / GOOGL / AMZN / META 財報 CapEx</div>
+    </div>`;
+
+  sigs.querySelectorAll('input.sigin').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const v=parseFloat(e.target.value);
+      if(!isNaN(v)) saveOverride(e.target.dataset.k, v);
+      render();
+    });
+  });
+
+  // ---------- 總判定 ----------
+  const v = document.getElementById('verdict');
+  let level, color, action;
+  if(h41stop){ level='流動性強平警報'; color='var(--red)';
+    action='<b>H.4.1 跌破強平線:</b>依框架應無條件出清衛星倉,核心 ETF 依個人規則處理。此信號優先級最高。';
+  } else if(trig>=5){ level='紅色警戒 · 進入 4–8 週觀察期'; color='var(--red)';
+    action='<b>建議動作:</b>停止衛星倉一切加碼;逐檔核對既定出場價;SGOV 水位由 15% 目標向上調;改為每週檢視本頁。';
+  } else if(trig>=3){ level='升溫 · 密切觀察'; color='var(--amber)';
+    action='<b>建議動作:</b>維持配置但暫停新增投機性小倉位;確認每檔衛星持股出場條件有效;雙週檢視。';
+  } else { level='常態'; color='var(--green)';
+    action='<b>建議動作:</b>依既有價格觸發規則執行,SGOV 維持目標水位,每月例行檢視即可。';
+  }
+  v.innerHTML = `
+    <div class="state"><span class="dot" style="background:${color}"></span>${level}</div>
+    <div class="count">${trig}<small> / 7 已觸發${near?(' · '+near+' 項接近'):''}</small></div>
+    <div class="fuse">${IND.map((ind,i)=>`<div class="seg ${segs[i]==='trig'?'on':segs[i]==='near'?'near':''}"><span>${ind.name.slice(0,6)}</span></div>`).join('')}</div>
+    <div class="action">${action}</div>`;
+}
+
+// ---------- 載入 ----------
+async function boot(){
+  try{
+    const [d, m] = await Promise.all([
+      fetch('data.json?t='+Date.now()).then(r=>r.ok?r.json():null),
+      fetch('manual.json?t='+Date.now()).then(r=>r.ok?r.json():null)
+    ]);
+    if(d && d.auto){ AUTO = Object.assign({}, FALLBACK.auto, d.auto); GEN = d.generated; }
+    if(m){
+      const mm={};
+      for(const k of ['odte','insider','fpe','skew25d','capex_now','capex_prev']){
+        if(m[k] && typeof m[k].value==='number') mm[k]=m[k];
+      }
+      MANUAL = Object.assign({}, FALLBACK.manual, mm);
+    }
+    if(!d){
+      const n=document.getElementById('notice');
+      n.style.display='block';
+      n.textContent='讀不到 data.json——如果是第一次部署,請先到 Actions 手動跑一次 update-data;目前顯示的是內建預設值。';
+    }
+  }catch(e){
+    const n=document.getElementById('notice');
+    n.style.display='block';
+    n.textContent='數據載入失敗(預覽模式或網路問題),目前顯示內建預設值。';
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>
