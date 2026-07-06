@@ -1,5 +1,6 @@
 {
   "_說明": "自動抓不到的項目在這裡改。直接在 GitHub 網頁點鉛筆編輯、commit 即可,儀表板會自動讀取。",
+  "margin_mom": { "value": -4.5, "asof": "2026-05", "_來源": "FINRA每月中公布,自動抓取被擋時的手填備援" },
   "odte": { "value": 62.4, "asof": "2026-06", "_來源": "CBOE Insights / 券商研報,約每月查一次" },
   "insider": { "value": 4.17, "asof": "2026-06", "_來源": "openinsider.com 或研報引用的賣買比" },
   "fpe": { "value": 30, "asof": "2026-06", "_來源": "FactSet Earnings Insight(每週五PDF)" },
