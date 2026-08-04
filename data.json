@@ -1,43 +1,43 @@
 {
-  "generated": "2026-08-03T23:32:39Z",
+  "generated": "2026-08-04T23:29:40Z",
   "auto": {
     "margin_mom": {
       "value": 6.1,
       "asof": "Jun-26",
       "ok": true,
-      "fetched": "2026-08-03 23:32 UTC"
+      "fetched": "2026-08-04 23:29 UTC"
     },
     "top10": {
-      "value": 38.1,
-      "asof": "2026-08-03",
+      "value": 38.3,
+      "asof": "2026-08-04",
       "ok": true,
-      "fetched": "2026-08-03 23:32 UTC"
+      "fetched": "2026-08-04 23:29 UTC"
     },
     "buffett": {
       "value": 214.0,
       "asof": "2026-01-01",
       "ok": true,
-      "fetched": "2026-08-03 23:32 UTC"
+      "fetched": "2026-08-04 23:29 UTC"
     },
     "m2_ndx_gap": {
-      "value": -16.3,
+      "value": -20.9,
       "m2_yoy": 5.5,
-      "ndx_yoy": 21.8,
+      "ndx_yoy": 26.4,
       "asof": "2026-06-01",
       "ok": true,
-      "fetched": "2026-08-03 23:32 UTC"
+      "fetched": "2026-08-04 23:29 UTC"
     },
     "h41": {
       "value": 2.985,
       "asof": "2026-07-29",
       "ok": true,
-      "fetched": "2026-08-03 23:32 UTC"
+      "fetched": "2026-08-04 23:29 UTC"
     },
     "skew_index": {
-      "value": 141.2,
-      "asof": "07/31/2026",
+      "value": 140.0,
+      "asof": "08/03/2026",
       "ok": true,
-      "fetched": "2026-08-03 23:32 UTC"
+      "fetched": "2026-08-04 23:29 UTC"
     }
   }
 }
