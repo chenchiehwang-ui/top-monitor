@@ -1,43 +1,44 @@
 {
-  "generated": "2026-09-17T00:42:17Z",
+  "generated": "2026-09-18T00:30:25Z",
   "auto": {
     "margin_mom": {
       "value": 2.6,
       "asof": "Aug-26",
       "ok": true,
-      "fetched": "2026-09-17 00:41 UTC"
+      "fetched": "2026-09-18 00:30 UTC"
     },
     "top10": {
       "value": 38.4,
       "asof": "2026-09-17",
-      "ok": true,
-      "fetched": "2026-09-17 00:41 UTC"
+      "ok": false,
+      "fetched": "2026-09-17 00:41 UTC",
+      "error": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
     },
     "buffett": {
       "value": 255.7,
       "asof": "2026-04-01",
       "ok": true,
-      "fetched": "2026-09-17 00:41 UTC"
+      "fetched": "2026-09-18 00:30 UTC"
     },
     "m2_ndx_gap": {
-      "value": -13.7,
+      "value": -13.8,
       "m2_yoy": 5.4,
-      "ndx_yoy": 19.1,
+      "ndx_yoy": 19.2,
       "asof": "2026-07-01",
       "ok": true,
-      "fetched": "2026-09-17 00:42 UTC"
+      "fetched": "2026-09-18 00:30 UTC"
     },
     "h41": {
-      "value": 2.991,
-      "asof": "2026-09-09",
+      "value": 3.014,
+      "asof": "2026-09-16",
       "ok": true,
-      "fetched": "2026-09-17 00:42 UTC"
+      "fetched": "2026-09-18 00:30 UTC"
     },
     "skew_index": {
       "value": 145.9,
       "asof": "09/16/2026",
       "ok": true,
-      "fetched": "2026-09-17 00:42 UTC"
+      "fetched": "2026-09-18 00:30 UTC"
     }
   }
 }
